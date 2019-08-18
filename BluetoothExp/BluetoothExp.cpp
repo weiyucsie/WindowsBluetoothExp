@@ -145,6 +145,26 @@ void MaybeGetFirmwareVersion(SOCKET sock) {
 	ShowBuffer(buffer, recvCount);
 }
 
+void ShowLastWattAndVolt(SOCKET sock) {
+	char msg[] = { -1, 85, -126, 0, 0 };
+	char buffer[9];
+	SetChecksumAndSend(sock, msg, _countof(msg));
+	int recvCount = RecvTillSize(sock, buffer, _countof(buffer));
+	if (recvCount == 9 && buffer[2] == -125)
+	{
+		unsigned char *uba = (unsigned char *)buffer;
+		int iLastWatt = uba[4] + uba[5] * 256;
+		int iLastVolt = uba[6] + uba[7] * 256;
+
+		printf("最新測量 %.1fW %.1fV\n", iLastWatt / 10.0, iLastVolt / 10.0);
+	}
+	else
+	{
+		ShowBuffer(buffer, recvCount);
+	}
+
+}
+
 int main()
 {
 	UUID serviceClassId = { 0xd9de1d91, 0xff94, 0x11e0,{ 0xbe, 0x50, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x99 } };
@@ -258,7 +278,7 @@ int main()
 					Sleep(150);
 					printf("Connected\n");
 
-					printf("1. Turn On 2. Turn Off 3. Check On/Off 4. 顯示時間 5.設定時間 Q. Quit\n");
+					printf("1. Turn On 2. Turn Off 3. Check On/Off 4. 顯示時間 5.設定時間 6.顯示瓦數 Q. Quit\n");
 					while (!toQuit)
 					{
 						TCHAR choice = _gettch();
@@ -282,6 +302,10 @@ int main()
 
 						case L'5':
 							SetDateTime(sock);
+							break;
+
+						case L'6':
+							ShowLastWattAndVolt(sock);
 							break;
 
 						case L'Q':
